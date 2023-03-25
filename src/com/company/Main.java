@@ -1,99 +1,67 @@
 package com.company;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
+/*  @author: Anil K V
+Horse Track Main Class
+ */
 public class Main {
-
-    private static Map<Integer, Horse> horseMap;
-
+    /* Horse track main method */
     public static void main(String[] args) {
-        Map<Integer, Horse> horseMap = getIntegerHorseMap();
-        Map<Integer, Integer> inventoryMap = getInventory();
-        printDashboard(horseMap, inventoryMap);
+        HorseUtil horseutil = new HorseUtil();
+        Map<Integer, Horse> horseMap = horseutil.getIntegerHorseMap();
+        Map<Integer, Integer> inventoryMap = horseutil.getInventory();
+        horseutil.printDashboard(horseMap, inventoryMap);
         Scanner sc = new Scanner(System.in);
-        char c = sc.next().charAt(0);
-        if(sc.hasNextInt()) {
-            int bet = sc.nextInt();
-            if (Character.isDigit(c)) {
-                int id = Integer.parseInt(String.valueOf(c));
-                Horse winner = findWinner(horseMap);
-                if (winner.getId() == id) {
-                    int dispense = winner.getOdds() * bet;
-                    System.out.println("payout:" + winner.getName() + "," + dispense);
-                    List<Integer> invent = inventoryMap.keySet().stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
-                    for (Integer o : invent) {
-                        int change = dispense / o;
-                        int setValue = inventoryMap.get(o) - change;
-                        inventoryMap.put(o, setValue);
-                        dispense = dispense % (int) o;
-
-                        System.out.println(o + "," + change);
-                    }
-                    System.out.println("Inventory");
-                    printInventory(inventoryMap);
-                } else {
-                    System.out.println("No Payout:" + horseMap.get(id).getName());
-                }
+        while (true) {
+            char c = sc.next().charAt(0);
+            //Checking whether passed value is digit or not
+            final String invalid_input = "Invalid Input";
+            if (sc.hasNextInt()) {
+                processHorseRace(horseutil, horseMap, inventoryMap, sc, c, invalid_input);
             } else {
-                Horse horse = horseMap.get(bet);
-                Horse winner = findWinner(horseMap);
-                winner.setStatus("lost");
-                horse.setStatus("won");
-                horseMap.put(winner.getId(), winner);
-                horseMap.put(horse.getId(), horse);
-                printDashboard(horseMap, inventoryMap);
+                horseutil.printString(invalid_input);
             }
-        }else{
-            System.out.println("Invalid Input");
         }
     }
 
-    private static Horse findWinner(Map<Integer, Horse> horseMap) {
-        Horse winner = horseMap.entrySet().stream().filter(x -> x.getValue().getStatus().equals("won")).
-                collect(Collectors.toSet()).stream().findFirst().get().getValue();
-        return winner;
-    }
-
-    private static void printInventory(Map<Integer, Integer> inventoryMap) {
-        for (Map.Entry h : inventoryMap.entrySet()) {
-            System.out.println("$" + h.getKey() + "," + h.getValue());
+    private static void processHorseRace(HorseUtil horseutil, Map<Integer, Horse> horseMap, Map<Integer, Integer> inventoryMap, Scanner sc, char c, String invalid_input) {
+        int bet = sc.nextInt();
+        //dispensing cash if passed bet is valid and hose number is digit
+        if (Character.isDigit(c)) {
+            int id = Integer.parseInt(String.valueOf(c));
+            if (horseMap.containsKey(id)) {
+                processHorseRace(horseutil, horseMap, inventoryMap, bet, id);
+            } else {
+                horseutil.printString(invalid_input);
+            } //ReSetting horse based on input
+        } else {
+            validateInput(horseutil, horseMap, inventoryMap, c, bet);
         }
     }
 
-    private static void printDashboard(Map<Integer, Horse> horseMap, Map<Integer, Integer> inventoryMap) {
-        printInventory(inventoryMap);
-        for (Horse h : horseMap.values()) {
-            System.out.println(h.toString());
+    private static void processHorseRace(HorseUtil horseutil, Map<Integer, Horse> horseMap, Map<Integer, Integer> inventoryMap, int bet, int id) {
+        Horse winner = horseutil.findWinner(horseMap);
+        //checking the winner horse name
+        if (winner.getId() == id)
+            horseutil.processBet(inventoryMap, bet, winner);
+        else {
+            System.out.println("No Payout:" + horseMap.get(id).getName());
+        } //printing invalid input
+    }
+
+    private static void validateInput(HorseUtil horseutil, Map<Integer, Horse> horseMap, Map<Integer, Integer> inventoryMap, char c, int bet) {
+        String input = String.valueOf(c);
+        switch (input) {
+            //Using String Literal in Switch case
+            case "W" -> horseutil.assignWinner(horseMap, inventoryMap, bet);
+            case "Q" -> {
+                horseutil.printString("Quit");
+                System.exit(0);
+            }
+            case "R" -> horseutil.resetHorseRace();
+            default -> horseutil.printString("Invalid Input");
         }
     }
 
-    private static Map<Integer, Horse> getIntegerHorseMap() {
-        Horse horse1 = new Horse(1, "That Darn Gray Cat", 5, "won");
-        Horse horse2 = new Horse(2, "Fort Utopia", 10, "lost");
-        Horse horse3 = new Horse(3, "Count Sheep", 9, "lost");
-        Horse horse4 = new Horse(4, "Ms Traitour", 4, "lost");
-        Horse horse5 = new Horse(5, "Real Princess", 3, "lost");
-        Horse horse6 = new Horse(6, "Pa Kettle", 5, "lost");
-        Horse horse7 = new Horse(7, "Gin Stinger", 6, "lost");
-        Map<Integer, Horse> horseMap = new LinkedHashMap<>();
-        horseMap.put(horse1.getId(), horse1);
-        horseMap.put(horse2.getId(), horse2);
-        horseMap.put(horse3.getId(), horse3);
-        horseMap.put(horse4.getId(), horse4);
-        horseMap.put(horse5.getId(), horse5);
-        horseMap.put(horse6.getId(), horse6);
-        horseMap.put(horse7.getId(), horse7);
-        return horseMap;
-    }
-
-    private static Map<Integer, Integer> getInventory() {
-        Map<Integer, Integer> inventoryMap = new LinkedHashMap<>();
-        inventoryMap.put(1, 10);
-        inventoryMap.put(5, 10);
-        inventoryMap.put(10, 10);
-        inventoryMap.put(20, 10);
-        inventoryMap.put(100, 10);
-        return inventoryMap;
-    }
 }
